@@ -48,7 +48,6 @@ namespace date
     }
 }
 
-//system functions
 void gotoxy(int x, int y)
 {
     COORD c;
@@ -68,24 +67,24 @@ const bool centering = true;
 
 void CenterWindow(int width, int height)
 {
-    if (centering == true)
-    {
-        width = width * 13 + 36; height = height * 24 + 60;
-        //pobieranie rozmiaru całego ekranu
-        int s_h = 0, s_v = 0;
+    if (centering != true)
+        return;
 
-        RECT desktop;
-        const HWND hDesktop = GetDesktopWindow();
-        GetWindowRect(hDesktop, &desktop);
-        s_h = desktop.right;
-        s_v = desktop.bottom;
+    width = width * 13 + 36; height = height * 24 + 60;
+    //pobieranie rozmiaru całego ekranu
+    int s_h = 0, s_v = 0;
 
-        //przygotowanie do przesunięcia okna 
-        HWND console = GetConsoleWindow();
+    RECT desktop;
+    const HWND hDesktop = GetDesktopWindow();
+    GetWindowRect(hDesktop, &desktop);
+    s_h = desktop.right;
+    s_v = desktop.bottom;
 
-        //CENTROWANIE OKNA
-        MoveWindow(console, (s_h / 2) - (width / 2), (s_v / 2) - (height / 2), width, height, TRUE);
-    }
+    //przygotowanie do przesunięcia okna 
+    HWND console = GetConsoleWindow();
+
+    //CENTROWANIE OKNA
+    MoveWindow(console, (s_h / 2) - (width / 2), (s_v / 2) - (height / 2), width, height, TRUE);
 }
 
 void change_font()
@@ -103,8 +102,6 @@ void change_font()
 
 
 int currX = width / 4, currY = height / 2;
-
-
 
 char direction = 'D';
 char prevDirection = direction;
