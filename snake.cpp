@@ -12,12 +12,20 @@
 #include <direct.h>
 #include <algorithm>
 #pragma warning(disable : 4996)
+#define FOREGROUND_DEFAULT 7
 
 using namespace std;
 
-HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-const bool centering = true;
+const int width = 40, height = 15;
+const int tabWidth = width + 1, tabHeight = height + 1;
 
+const int h_speed = 150;
+const int v_speed = h_speed * 1.4;
+
+POINT current = { width / 4, height / 2 };
+
+char direction = 'D';
+char prevDirection = direction;
 
 namespace date
 {
@@ -25,30 +33,33 @@ namespace date
     {
         string F_date = to_string(date);
         if (date < 10)
-        {
             F_date = "0" + to_string(date);
-        }
+
         return F_date;
     }
 
     string get_date()
     {
         time_t now = time(0);
-        tm* ltm = localtime(&now);
+        tm ltm = (*localtime(&now));
 
-        int day = ltm->tm_mday;
-        int month = 1 + ltm->tm_mon;
-        int year = 1900 + ltm->tm_year;
+        int day = ltm.tm_mday;
+        int month = 1 + ltm.tm_mon;
+        int year = 1900 + ltm.tm_year;
 
-        int hour = ltm->tm_hour;// << ":";
-        int min = ltm->tm_min; //<< ":";
-        int sec = ltm->tm_sec; //<< endl;
+        int hour = ltm.tm_hour;
+        int min = ltm.tm_min; 
+        int sec = ltm.tm_sec; 
 
-        string dt = f_date(day) + "-" + f_date(month) + "-" + f_date(year);
-        dt = dt + "   " + f_date(hour) + ":" + f_date(min) + ":" + f_date(sec);
-        //dt = ctime(&now);
+        string date = f_date(day) + "-" 
+            + f_date(month) + "-" 
+            + f_date(year) + "   ";
+        
+        date += f_date(hour) + ":" 
+            + f_date(min) + ":" 
+            + f_date(sec);
 
-        return dt;
+        return date;
     }
 }
 
@@ -60,61 +71,69 @@ void gotoxy(int x, int y)
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
 
-namespace consoleFunctions
+class Console
 {
-    
-    void CenterWindow(int width, int height)
-{
-    if (centering != true)
-        return;
-
-    width = width * 13 + 36; height = height * 24 + 60;
-    //pobieranie rozmiaru całego ekranu
-    int s_h = 0, s_v = 0;
-
-    RECT desktop;
-    const HWND hDesktop = GetDesktopWindow();
-    GetWindowRect(hDesktop, &desktop);
-    s_h = desktop.right;
-    s_v = desktop.bottom;
-
-    //przygotowanie do przesunięcia okna 
+    const bool centering = true;
+    CONSOLE_FONT_INFOEX cfi;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    HWND hDesktop = GetDesktopWindow();
     HWND console = GetConsoleWindow();
+    RECT desktop = GetWindowRectangle();
 
-    //CENTROWANIE OKNA
-    MoveWindow(console, (s_h / 2) - (width / 2), (s_v / 2) - (height / 2), width, height, TRUE);
-}
+    RECT GetWindowRectangle()
+    {
+        RECT desktop;
+        GetWindowRect(hDesktop, &desktop);
+        return desktop;
+    }
+
+    void makeScrollAppear()
+    {
+        COORD c;
+        c.X = width + 100; c.Y = 9000;
+        SetConsoleScreenBufferSize(hConsole, c);
+    }
+
+public:
+
+    Console()
+    {
+        change_font();
+        makeScrollAppear(); //doesnt work
+    }
+
+    void setTextColor(UINT color)
+    {
+        SetConsoleTextAttribute(hConsole, color);
+    }
+
+    void CenterWindow(int width, int height)
+    {
+        if (centering != true)
+            return;
+
+        const pair<int, int> margin = {36, 60};
+        width = width * cfi.dwFontSize.X + margin.first;
+        height = height * cfi.dwFontSize.Y + margin.second;
+
+        MoveWindow(console, (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2), width, height, TRUE);
+    }
 
     void change_font()
     {
-        CONSOLE_FONT_INFOEX cfi;
         cfi.cbSize = sizeof(cfi);
         cfi.nFont = 0;
-        cfi.dwFontSize.X = 0;                   // Width of each character in the font
-        cfi.dwFontSize.Y = 24;                  // Height
+        cfi.dwFontSize.X = 13;                   
+        cfi.dwFontSize.Y = 24;                   
         cfi.FontFamily = FF_DONTCARE;
         cfi.FontWeight = FW_BOLD;
-        wcscpy_s(cfi.FaceName, L"Liberation Mono"); // Choose your font
-        SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+        wcscpy_s(cfi.FaceName, L"Liberation Mono");
+        SetCurrentConsoleFontEx(hConsole, FALSE, &cfi);
     }
 
-}
+} console;
 
 
-
-
-const int width = 40, height = 15;
-const int tabWidth = width + 1, tabHeight = height + 1;
-
-const int h_speed = 150;
-const int v_speed = h_speed * 1.4;
-
-
-
-POINT current = { width / 4, height / 2 };
-
-char direction = 'D';
-char prevDirection = direction;
 
 bool comp(pair <int, string> i, pair <int, string> j)
 {
@@ -157,9 +176,9 @@ public:
             string word = "Score: ";
             if ((-centred) - 3)
                 word += " ";
-            SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+            console.setTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
             gotoxy(width / 2 + centred, 1); cout << word << BodyCoords.size() - startingLength - 1;
-            SetConsoleTextAttribute(hConsole, 7);
+            console.setTextColor(FOREGROUND_DEFAULT);
             spawn_fruit();
         }
     }
@@ -184,11 +203,10 @@ public:
             if (out) 
                 break;
         }
-
-        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
+        console.setTextColor(FOREGROUND_RED | FOREGROUND_INTENSITY);
         gotoxy(fruit.x, fruit.y);
         cout << "*";
-        SetConsoleTextAttribute(hConsole, 7);
+        console.setTextColor(FOREGROUND_DEFAULT);
     }
 
 
@@ -393,7 +411,7 @@ public:
 
         gotoxy(width / 2 - 5, height / 2 + 5);
         cout << "Choose option: ";
-        consoleFunctions::CenterWindow(width, height);
+        console.CenterWindow(width, height);
 
         COORD c; c.X = width + 10; c.Y = 9000;
         SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
@@ -404,10 +422,10 @@ public:
         //clearing board
         clear_board();
         //outputing "GAME OVER"
-        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
+        console.setTextColor(FOREGROUND_RED | FOREGROUND_INTENSITY);
         gotoxy(width / 2 - 7, height / 2 - 2); cout << "G A M E   O V E R";
         gotoxy(width / 2 - 5, height / 2); cout << "Your score: " << BodyCoords.size() - startingLength - 1;
-        SetConsoleTextAttribute(hConsole, 7);
+        console.setTextColor(FOREGROUND_DEFAULT);
 
         draw_play_again();
     }
@@ -590,7 +608,7 @@ public:
         fileScoreRead.open("Pliki/" + plik + ".txt");
         float p = 1.5;
         int width = 40 * p, height = 15 * p - 1;
-        consoleFunctions::CenterWindow(width, height);
+        console.CenterWindow(width, height);
 
         //BORDERS
         gotoxy(1, 1); for (int i = 0; i < width - 1; i++) cout << "#";
@@ -670,14 +688,10 @@ Object snake;
 
 int main()
 {
-    consoleFunctions::change_font();
-    //lines to appear scroll, for better look
-    COORD c; c.X = width + 100; c.Y = 9000;
-    SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
 
 
     //GAME PREPARATIONS
-    consoleFunctions::CenterWindow(width, height);
+    console.CenterWindow(width, height);
     snake.draw_snake();
 
     snake.spawn_fruit();
