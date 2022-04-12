@@ -16,20 +16,9 @@
 
 using namespace std;
 
-const int width = 40, height = 15;
-const int tabWidth = width + 1, tabHeight = height + 1;
-
-const int h_speed = 150;
-const int v_speed = h_speed * 1.4;
-
-POINT current = { width / 4, height / 2 };
-
-char direction = 'D';
-char prevDirection = direction;
-
 namespace date
 {
-    string f_date(int date)
+    string fDate(int date)
     {
         string F_date = to_string(date);
         if (date < 10)
@@ -38,7 +27,7 @@ namespace date
         return F_date;
     }
 
-    string get_date()
+    string getDate()
     {
         time_t now = time(0);
         tm ltm = (*localtime(&now));
@@ -51,13 +40,13 @@ namespace date
         int min = ltm.tm_min; 
         int sec = ltm.tm_sec; 
 
-        string date = f_date(day) + "-" 
-            + f_date(month) + "-" 
-            + f_date(year) + "   ";
+        string date = fDate(day) + "-" 
+            + fDate(month) + "-" 
+            + fDate(year) + "   ";
         
-        date += f_date(hour) + ":" 
-            + f_date(min) + ":" 
-            + f_date(sec);
+        date += fDate(hour) + ":" 
+            + fDate(min) + ":" 
+            + fDate(sec);
 
         return date;
     }
@@ -73,7 +62,7 @@ void gotoxy(int x, int y)
 
 class Console
 {
-    const bool centering = true;
+    const bool CENTERING = true;
     CONSOLE_FONT_INFOEX cfi;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     HWND hDesktop = GetDesktopWindow();
@@ -90,15 +79,18 @@ class Console
     void makeScrollAppear()
     {
         COORD c;
-        c.X = width + 100; c.Y = 9000;
+        c.X = WIDTH + 100; c.Y = 9000;
         SetConsoleScreenBufferSize(hConsole, c);
     }
 
 public:
 
+    const int WIDTH = 40, const HEIGHT = 15;
+
     Console()
     {
-        change_font();
+        changeFont();
+        centerWindow(WIDTH, HEIGHT);
         makeScrollAppear(); //doesnt work
     }
 
@@ -107,19 +99,19 @@ public:
         SetConsoleTextAttribute(hConsole, color);
     }
 
-    void CenterWindow(int width, int height)
+    void centerWindow(int width, int height)
     {
-        if (centering != true)
+        if (CENTERING != true)
             return;
-
-        const pair<int, int> margin = {36, 60};
-        width = width * cfi.dwFontSize.X + margin.first;
-        height = height * cfi.dwFontSize.Y + margin.second;
+        
+        const pair<int, int> MARGIN = {36, 60};
+        width = width * cfi.dwFontSize.X + MARGIN.first;
+        height = height * cfi.dwFontSize.Y + MARGIN.second;
 
         MoveWindow(console, (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2), width, height, TRUE);
     }
 
-    void change_font()
+    void changeFont()
     {
         cfi.cbSize = sizeof(cfi);
         cfi.nFont = 0;
@@ -133,6 +125,13 @@ public:
 
 } console;
 
+const int H_SPEED = 150;
+const int V_SPEED = H_SPEED * 1.4;
+
+POINT current = { console.WIDTH / 4, console.HEIGHT / 2 };
+
+char direction = 'D';
+char prevDirection = direction;
 
 
 bool comp(pair <int, string> i, pair <int, string> j)
@@ -143,17 +142,16 @@ bool comp(pair <int, string> i, pair <int, string> j)
 class Object
 {
 public:
-    const int startingLength = 4;
+    const int STARTING_LENGTH = 4;
     vector <POINT> BodyCoords;
 
-    bool gameOver = false;
     int gameOverTicks = 2; //ticks when player bumps into the wall
 
     POINT fruit;
     POINT head = current;
-    POINT tail = { current.x - startingLength, current.y }; //tail is actually 1 block behind the visible tail
+    POINT tail = { current.x - STARTING_LENGTH, current.y }; //tail is actually 1 block behind the visible tail
 
-    void check_if_eaten()
+    void checkIfEaten()
     {
         if (head.x == fruit.x && head.y == fruit.y)//prevTailX == TfruitX && prevTailY == TfruitY)
         {
@@ -177,19 +175,19 @@ public:
             if ((-centred) - 3)
                 word += " ";
             console.setTextColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-            gotoxy(width / 2 + centred, 1); cout << word << BodyCoords.size() - startingLength - 1;
+            gotoxy(console.WIDTH / 2 + centred, 1); cout << word << BodyCoords.size() - STARTING_LENGTH - 1;
             console.setTextColor(FOREGROUND_DEFAULT);
-            spawn_fruit();
+            spawnFruit();
         }
     }
-    void spawn_fruit()
+    void spawnFruit()
     {
         srand(time(NULL));
 
         while (true) //if fruit coords are the same as any of snake segments, draw coords again
         {
-            fruit.x = rand() % (width - 2) + 2;
-            fruit.y = rand() % (height - 2) + 2;
+            fruit.x = rand() % (console.WIDTH - 2) + 2;
+            fruit.y = rand() % (console.HEIGHT - 2) + 2;
             bool out = false;
 
             for (int i = 0; i < BodyCoords.size(); i++)
@@ -210,7 +208,7 @@ public:
     }
 
 
-    void check_colision()
+    void checkColision()
     {
         for (int i = 1; i < BodyCoords.size(); i++)
         {
@@ -219,25 +217,24 @@ public:
                 bool again = false;
                 while (!again)
                 {
-                    draw_game_over();
-                    choose_menu_option(again);
+                    drawGameOverScreen();
+                    chooseMenuOption(again);
                 }
-                //gameOver = true;
                 break;
             }
         }
     }
-    void check_game_over()
+    void checkGameOver()
     {
         if (gameOverTicks > 2)
         {
-            save_last_score();
-            save_highscore();
+            saveLastScore();
+            saveHighscore();
             bool again = false;
             while (!again)
             {
-                draw_game_over();
-                choose_menu_option(again);
+                drawGameOverScreen();
+                chooseMenuOption(again);
             }
         }
         else
@@ -245,7 +242,7 @@ public:
     }
 
 
-    void move_coords()
+    void moveCoords()
     {
         prevTailX = tail.x;
         prevTailY = tail.y; 
@@ -263,8 +260,8 @@ public:
                 prevPos1 = prevPos2;
             }
             head = current;
-            check_if_eaten();
-            check_colision();
+            checkIfEaten();
+            checkColision();
             tail.x = BodyCoords[BodyCoords.size() - 1].x;
             tail.y = BodyCoords[BodyCoords.size() - 1].y;
 
@@ -314,9 +311,9 @@ public:
                 gameOverTicks = 0;
             }
             else
-                check_game_over();
+                checkGameOver();
 
-            Sleep(v_speed);
+            Sleep(V_SPEED);
             break;
 
         case 'A':
@@ -326,65 +323,65 @@ public:
                 gameOverTicks = 0;
             }
             else
-                check_game_over();
+                checkGameOver();
 
-            Sleep(h_speed);
+            Sleep(H_SPEED);
             break;
 
         case 'S':
-            if (current.y < height - 1)
+            if (current.y < console.HEIGHT - 1)
             {
                 current.y += 1;
                 gameOverTicks = 0;
             }
             else
-                check_game_over();
+                checkGameOver();
 
-            Sleep(v_speed);
+            Sleep(V_SPEED);
             break;
 
         case 'D':
-            if (current.x < width - 1)
+            if (current.x < console.WIDTH - 1)
             {
                 current.x += 1;
                 gameOverTicks = 0;
             }
             else
-                check_game_over();
+                checkGameOver();
 
-            Sleep(h_speed);
+            Sleep(H_SPEED);
             break;
         }
 
-        move_coords();
-        draw_snake();
+        moveCoords();
+        drawSnake();
     }
 
 
-    void draw_board()
+    void drawBoard()
     {
         //bottom border
         gotoxy(1, 1);
-        for (int i = 1; i <= width; i++)
+        for (int i = 1; i <= console.WIDTH; i++)
             cout << "$";
         //left border
-        for (int i = 1; i <= height; i++)
+        for (int i = 1; i <= console.HEIGHT; i++)
         {
             gotoxy(1, i);
             cout << "$";
         }
         //right border
-        for (int i = 1; i <= height; i++)
+        for (int i = 1; i <= console.HEIGHT; i++)
         {
-            gotoxy(width, i);
+            gotoxy(console.WIDTH, i);
             cout << "$";
         }
         //top border
-        gotoxy(1, height);
-        for (int i = 1; i <= width; i++)
+        gotoxy(1, console.HEIGHT);
+        for (int i = 1; i <= console.WIDTH; i++)
             cout << "$";
     }
-    void draw_snake()
+    void drawSnake()
     {
         //clearing space after tail
         gotoxy(tail.x, tail.y);
@@ -400,49 +397,45 @@ public:
         }
         gotoxy(1, 1);
     }
-    void draw_play_again()
+    void drawPlayAgainMenu()
     {
-        gotoxy(width / 2 - 5, height / 2 + 2);
+        gotoxy(console.WIDTH / 2 - 5, console.HEIGHT / 2 + 2);
         cout << "1. Play again";
-        gotoxy(width / 2 - 5, height / 2 + 3);
+        gotoxy(console.WIDTH / 2 - 5, console.HEIGHT / 2 + 3);
         cout << "2. Exit";
-        gotoxy(width / 2 - 5, height / 2 + 4);
+        gotoxy(console.WIDTH / 2 - 5, console.HEIGHT / 2 + 4);
         cout << "3. Menu";
 
-        gotoxy(width / 2 - 5, height / 2 + 5);
+        gotoxy(console.WIDTH / 2 - 5, console.HEIGHT / 2 + 5);
         cout << "Choose option: ";
-        console.CenterWindow(width, height);
-
-        COORD c; c.X = width + 10; c.Y = 9000;
-        SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
-
+        console.centerWindow(console.WIDTH, console.HEIGHT);
     }
-    void draw_game_over()
+    void drawGameOverScreen()
     {
         //clearing board
-        clear_board();
+        clearBoard();
         //outputing "GAME OVER"
         console.setTextColor(FOREGROUND_RED | FOREGROUND_INTENSITY);
-        gotoxy(width / 2 - 7, height / 2 - 2); cout << "G A M E   O V E R";
-        gotoxy(width / 2 - 5, height / 2); cout << "Your score: " << BodyCoords.size() - startingLength - 1;
+        gotoxy(console.WIDTH / 2 - 7, console.HEIGHT / 2 - 2); cout << "G A M E   O V E R";
+        gotoxy(console.WIDTH / 2 - 5, console.HEIGHT / 2); cout << "Your score: " << BodyCoords.size() - STARTING_LENGTH - 1;
         console.setTextColor(FOREGROUND_DEFAULT);
 
-        draw_play_again();
+        drawPlayAgainMenu();
     }
-    void clear_board()
+    void clearBoard()
     {
         gotoxy(1, 2);
-        for (int i = 2; i < height; i++)
+        for (int i = 2; i < console.HEIGHT; i++)
         {
             cout << "$";
-            for (int j = 2; j < width; j++)
+            for (int j = 2; j < console.WIDTH; j++)
                 cout << " ";
             cout << endl;
         }
     }
 
 
-    void choose_menu_option(bool& again)
+    void chooseMenuOption(bool& again)
     {
         char option;
         bool correctOption = false;
@@ -455,25 +448,25 @@ public:
                 //option_restart();
                 correctOption = true;
                 again = true;
-                option_restart();
+                restart();
                 break;
             case '2':
                 system("CLS");
-                gotoxy(width / 2 - 3, height / 2);  cout << "Żegnaj! :)";
+                gotoxy(console.WIDTH / 2 - 3, console.HEIGHT / 2);  cout << "Żegnaj! :)";
                 Sleep(1500);
                 exit(0);
                 break;
             case '3':
                 correctOption = true;
-                clear_board();
+                clearBoard();
 
-                gotoxy(width / 2 - 6, height / 2);
+                gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2);
                 cout << "1. Scoreboard";
-                gotoxy(width / 2 - 6, height / 2 + 1);
+                gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2 + 1);
                 cout << "2. Last scores";
-                gotoxy(width / 2 - 6, height / 2 + 2);
+                gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2 + 2);
                 cout << "3. Settings (not ready)";
-                gotoxy(width / 2 - 6, height / 2 + 3);
+                gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2 + 3);
                 cout << "Choose option: ";
 
 
@@ -486,11 +479,11 @@ public:
                     {
                     case '1':
                         correctMenuOption = true;
-                        load_scores_to_screen("Highscores");
+                        loadScoresToScreen("Highscores");
                         break;
                     case '2':
                         correctMenuOption = true;
-                        load_scores_to_screen("Last_Scores");
+                        loadScoresToScreen("Last_Scores");
                         break;
                     }
 
@@ -508,13 +501,13 @@ public:
                 //}
                 _getch();
                 system("CLS");
-                draw_board();
+                drawBoard();
                 break;
             }
         }
     }
 
-    void save_last_score()
+    void saveLastScore()
     {
         int scores[10];
         string dates[10];
@@ -543,16 +536,16 @@ public:
         fstream lastScore;
         lastScore.open("Pliki/Last_Scores.txt", ios::out);
 
-        int score = BodyCoords.size() - startingLength - 1;
-        lastScore << "1. Score: " << score << " -----> " << "Date: " << date::get_date() << endl << endl;
+        int score = BodyCoords.size() - STARTING_LENGTH - 1;
+        lastScore << "1. Score: " << score << " -----> " << "Date: " << date::getDate() << endl << endl;
         for (int j = 2; j <= i + 1; j++)
             lastScore << j << ". " << "Score: " << scores[j - 2] << " -" << dates[j - 2] << endl << endl;
 
         lastScore.close();
     }
-    void save_highscore()
+    void saveHighscore()
     {
-        int score = BodyCoords.size() - startingLength - 1;
+        int score = BodyCoords.size() - STARTING_LENGTH - 1;
 
         if (score > 0)
         {
@@ -581,7 +574,7 @@ public:
             sort(scores, scores + n, comp);
 
 
-            string date = " Date: " + date::get_date();
+            string date = " Date: " + date::getDate();
             if (scores[9].first < score)
             {
                 scores[9].first = score;
@@ -600,7 +593,7 @@ public:
         }
     }
 
-    void load_scores_to_screen(string plik)
+    void loadScoresToScreen(string plik)
     {
         system("CLS");
 
@@ -608,7 +601,7 @@ public:
         fileScoreRead.open("Pliki/" + plik + ".txt");
         float p = 1.5;
         int width = 40 * p, height = 15 * p - 1;
-        console.CenterWindow(width, height);
+        console.centerWindow(width, height);
 
         //BORDERS
         gotoxy(1, 1); for (int i = 0; i < width - 1; i++) cout << "#";
@@ -641,37 +634,36 @@ public:
     //PREPARATION STUFF
     Object()
     {
-        draw_board();
-        fill_BodyCoords();
-        gotoxy(width / 2 - 3, 1); 
+        drawBoard();
+        fillBodyCoords();
+        gotoxy(console.WIDTH / 2 - 3, 1); 
         cout << "Score: " << 0;
     }
 
-    void option_restart()
+    void restart()
     {
         system("CLS");
-        current = { width / 4, height / 2 };
+        current = { console.WIDTH / 4, console.HEIGHT / 2 };
         //snake reset
-        gameOver = false;
         direction = 'D'; prevDirection = 'D';
         head = current;
-        tail = { current.x - startingLength, current.y};
+        tail = { current.x - STARTING_LENGTH, current.y};
 
-        draw_board();
+        drawBoard();
         BodyCoords.clear();
-        fill_BodyCoords();
-        gotoxy(width / 2 - 3, 1); cout << "Score: " << BodyCoords.size() - startingLength - 1;
-        spawn_fruit();
+        fillBodyCoords();
+        gotoxy(console.WIDTH / 2 - 3, 1); cout << "Score: " << BodyCoords.size() - STARTING_LENGTH - 1;
+        spawnFruit();
     }
 
 
 private:
     int prevTailY, prevTailX;
     int TfruitY, TfruitX;
-    void fill_BodyCoords()
+    void fillBodyCoords()
     {
         BodyCoords.emplace_back(POINT{ head.x, head.y });
-        for (int i = 1; i < startingLength; i++)
+        for (int i = 1; i < STARTING_LENGTH; i++)
             BodyCoords.emplace_back(POINT{ head.x, head.y - i });
         BodyCoords.emplace_back(POINT{ tail.x, tail.y });
 
@@ -691,10 +683,9 @@ int main()
 
 
     //GAME PREPARATIONS
-    console.CenterWindow(width, height);
-    snake.draw_snake();
+    snake.drawSnake();
 
-    snake.spawn_fruit();
+    snake.spawnFruit();
     while (true)
     {
         while (_kbhit()) direction = _getch();
@@ -704,10 +695,6 @@ int main()
             //cout << "PD: " << prevDirection << " D: " << direction;
 
         snake.move();// direction, prevDirection);
-        if (snake.gameOver)
-        {
-            //draw_game_over();
-        }
         prevDirection = direction;
     }
 }
