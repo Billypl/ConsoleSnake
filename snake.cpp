@@ -15,6 +15,10 @@
 
 using namespace std;
 
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+const bool centering = true;
+
+
 namespace date
 {
     string f_date(int date)
@@ -55,17 +59,11 @@ void gotoxy(int x, int y)
     c.Y = y - 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
-HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-
-const int width = 40, height = 15;
-const int tabWidth = width + 1, tabHeight = height + 1;
-
-const int h_speed = 150;
-const int v_speed = h_speed * 1.4;
-const bool centering = true;
-
-void CenterWindow(int width, int height)
+namespace consoleFunctions
+{
+    
+    void CenterWindow(int width, int height)
 {
     if (centering != true)
         return;
@@ -87,21 +85,33 @@ void CenterWindow(int width, int height)
     MoveWindow(console, (s_h / 2) - (width / 2), (s_v / 2) - (height / 2), width, height, TRUE);
 }
 
-void change_font()
-{
-    CONSOLE_FONT_INFOEX cfi;
-    cfi.cbSize = sizeof(cfi);
-    cfi.nFont = 0;
-    cfi.dwFontSize.X = 0;                   // Width of each character in the font
-    cfi.dwFontSize.Y = 24;                  // Height
-    cfi.FontFamily = FF_DONTCARE;
-    cfi.FontWeight = FW_BOLD;
-    wcscpy_s(cfi.FaceName, L"Liberation Mono"); // Choose your font
-    SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+    void change_font()
+    {
+        CONSOLE_FONT_INFOEX cfi;
+        cfi.cbSize = sizeof(cfi);
+        cfi.nFont = 0;
+        cfi.dwFontSize.X = 0;                   // Width of each character in the font
+        cfi.dwFontSize.Y = 24;                  // Height
+        cfi.FontFamily = FF_DONTCARE;
+        cfi.FontWeight = FW_BOLD;
+        wcscpy_s(cfi.FaceName, L"Liberation Mono"); // Choose your font
+        SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+    }
+
 }
 
 
-int currX = width / 4, currY = height / 2;
+
+
+const int width = 40, height = 15;
+const int tabWidth = width + 1, tabHeight = height + 1;
+
+const int h_speed = 150;
+const int v_speed = h_speed * 1.4;
+
+
+
+POINT current = { width / 4, height / 2 };
 
 char direction = 'D';
 char prevDirection = direction;
@@ -114,24 +124,22 @@ bool comp(pair <int, string> i, pair <int, string> j)
 class Object
 {
 public:
-    int length = 4;
-    const int startingLength = length;
-    vector <pair<int, int>> BodyCoords;
+    const int startingLength = 4;
+    vector <POINT> BodyCoords;
 
     bool gameOver = false;
     int gameOverTicks = 2; //ticks when player bumps into the wall
 
-    int fruitY, fruitX;
-    int headY = currY, headX = currX;
-    int tailY = currY, tailX = currX - length; //tail is actually 1 block behind the visible tail
+    POINT fruit;
+    POINT head = current;
+    POINT tail = { current.x - startingLength, current.y }; //tail is actually 1 block behind the visible tail
 
     void check_if_eaten()
     {
-        if (headX == fruitX && headY == fruitY)//prevTailX == TfruitX && prevTailY == TfruitY)
+        if (head.x == fruit.x && head.y == fruit.y)//prevTailX == TfruitX && prevTailY == TfruitY)
         {
             //creating new tail
-            BodyCoords.emplace_back(prevTailX, prevTailY);
-            length++;
+            BodyCoords.emplace_back(POINT{ prevTailX, prevTailY });
             //"deleting" fruit
             TfruitX = 0; TfruitY = 0;
             ///} 
@@ -141,8 +149,8 @@ public:
                 //(fruit coords staying it the same place/dissapearing immidiately and not counting as snake segments)
             ///if (headX == fruitX && headY == fruitY)
             ///{
-            TfruitX = fruitX;
-            TfruitY = fruitY;
+            TfruitX = fruit.x;
+            TfruitY = fruit.y;
 
             ///centred SCORE text///
             int centred = -(int)log10((BodyCoords.size() - 1 - 2)) - 3;
@@ -158,29 +166,27 @@ public:
     void spawn_fruit()
     {
         srand(time(NULL));
-        int fruitX = width, fruitY;
 
         while (true) //if fruit coords are the same as any of snake segments, draw coords again
         {
-            fruitX = rand() % (width - 2) + 2;
-            fruitY = rand() % (height - 2) + 2;
+            fruit.x = rand() % (width - 2) + 2;
+            fruit.y = rand() % (height - 2) + 2;
             bool out = false;
 
             for (int i = 0; i < BodyCoords.size(); i++)
             {
-                if (fruitX != BodyCoords[i].first && fruitY != BodyCoords[i].second)
+                if (fruit.x != BodyCoords[i].x && fruit.y != BodyCoords[i].y)
                 {
                     out = true;
                     break;
                 }
             }
-            if (out) break;
+            if (out) 
+                break;
         }
-        this->fruitX = fruitX;
-        this->fruitY = fruitY;
 
         SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
-        gotoxy(fruitX, fruitY);
+        gotoxy(fruit.x, fruit.y);
         cout << "*";
         SetConsoleTextAttribute(hConsole, 7);
     }
@@ -190,7 +196,7 @@ public:
     {
         for (int i = 1; i < BodyCoords.size(); i++)
         {
-            if (headX == BodyCoords[i].first && headY == BodyCoords[i].second)
+            if (head.x == BodyCoords[i].x && head.y == BodyCoords[i].y)
             {
                 bool again = false;
                 while (!again)
@@ -223,25 +229,26 @@ public:
 
     void move_coords()
     {
-        prevTailY = tailY; prevTailX = tailX;
-        pair <int, int> prevPos1 = BodyCoords[0];
-        pair <int, int> prevPos2;
-        if (BodyCoords[0].second == currY && BodyCoords[0].first == currX) //probably death delay
+        prevTailX = tail.x;
+        prevTailY = tail.y; 
+        POINT prevPos1 = BodyCoords[0];
+        POINT prevPos2;
+        if (BodyCoords[0].x == current.x && BodyCoords[0].y == current.y) //probably death delay (comment after a year)
             return;
         else
         {
-            BodyCoords[0] = { currX, currY };
+            BodyCoords[0] = current;
             for (int i = 1; i < BodyCoords.size(); i++)
             {
                 prevPos2 = BodyCoords[i];
                 BodyCoords[i] = prevPos1;
                 prevPos1 = prevPos2;
             }
-            headY = currY, headX = currX;
+            head = current;
             check_if_eaten();
             check_colision();
-            tailX = BodyCoords[BodyCoords.size() - 1].first;
-            tailY = BodyCoords[BodyCoords.size() - 1].second;
+            tail.x = BodyCoords[BodyCoords.size() - 1].x;
+            tail.y = BodyCoords[BodyCoords.size() - 1].y;
 
         }
     }
@@ -283,9 +290,9 @@ public:
         switch (key)
         {
         case 'W':
-            if (currY > 2)
+            if (current.y > 2)
             {
-                currY -= 1;
+                current.y -= 1;
                 gameOverTicks = 0;
             }
             else
@@ -295,9 +302,9 @@ public:
             break;
 
         case 'A':
-            if (currX > 2)
+            if (current.x > 2)
             {
-                currX -= 1;
+                current.x -= 1;
                 gameOverTicks = 0;
             }
             else
@@ -307,9 +314,9 @@ public:
             break;
 
         case 'S':
-            if (currY < height - 1)
+            if (current.y < height - 1)
             {
-                currY += 1;
+                current.y += 1;
                 gameOverTicks = 0;
             }
             else
@@ -319,9 +326,9 @@ public:
             break;
 
         case 'D':
-            if (currX < width - 1)
+            if (current.x < width - 1)
             {
-                currX += 1;
+                current.x += 1;
                 gameOverTicks = 0;
             }
             else
@@ -362,15 +369,15 @@ public:
     void draw_snake()
     {
         //clearing space after tail
-        gotoxy(tailX, tailY);
+        gotoxy(tail.x, tail.y);
         cout << " ";
 
         //drawing snake
-        gotoxy(BodyCoords[0].first, BodyCoords[0].second);
+        gotoxy(BodyCoords[0].x, BodyCoords[0].y);
         cout << "@";
         for (int i = 1; i < BodyCoords.size() - 1; i++)
         {
-            gotoxy(BodyCoords[i].first, BodyCoords[i].second);
+            gotoxy(BodyCoords[i].x, BodyCoords[i].y);
             cout << "#";
         }
         gotoxy(1, 1);
@@ -386,7 +393,7 @@ public:
 
         gotoxy(width / 2 - 5, height / 2 + 5);
         cout << "Choose option: ";
-        CenterWindow(width, height);
+        consoleFunctions::CenterWindow(width, height);
 
         COORD c; c.X = width + 10; c.Y = 9000;
         SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
@@ -583,7 +590,7 @@ public:
         fileScoreRead.open("Pliki/" + plik + ".txt");
         float p = 1.5;
         int width = 40 * p, height = 15 * p - 1;
-        CenterWindow(width, height);
+        consoleFunctions::CenterWindow(width, height);
 
         //BORDERS
         gotoxy(1, 1); for (int i = 0; i < width - 1; i++) cout << "#";
@@ -625,12 +632,12 @@ public:
     void option_restart()
     {
         system("CLS");
-        currX = width / 4; currY = height / 2;
+        current = { width / 4, height / 2 };
         //snake reset
         gameOver = false;
         direction = 'D'; prevDirection = 'D';
-        headY = currY, headX = currX;
-        tailY = currY, tailX = currX - startingLength;
+        head = current;
+        tail = { current.x - startingLength, current.y};
 
         draw_board();
         BodyCoords.clear();
@@ -645,10 +652,10 @@ private:
     int TfruitY, TfruitX;
     void fill_BodyCoords()
     {
-        BodyCoords.emplace_back(headX, headY);
+        BodyCoords.emplace_back(POINT{ head.x, head.y });
         for (int i = 1; i < startingLength; i++)
-            BodyCoords.emplace_back(headX, headY - i);
-        BodyCoords.emplace_back(tailX, tailY);
+            BodyCoords.emplace_back(POINT{ head.x, head.y - i });
+        BodyCoords.emplace_back(POINT{ tail.x, tail.y });
 
         /*for (const auto& [x, y] : BodyCoords)
             cout << x << ' ' << y << '\n';*/
@@ -663,14 +670,14 @@ Object snake;
 
 int main()
 {
-    change_font();
+    consoleFunctions::change_font();
     //lines to appear scroll, for better look
     COORD c; c.X = width + 100; c.Y = 9000;
     SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
 
 
     //GAME PREPARATIONS
-    CenterWindow(width, height);
+    consoleFunctions::CenterWindow(width, height);
     snake.draw_snake();
 
     snake.spawn_fruit();
