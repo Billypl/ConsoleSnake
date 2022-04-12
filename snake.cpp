@@ -125,15 +125,12 @@ public:
     int headY = currY, headX = currX;
     int tailY = currY, tailX = currX - length; //tail is actually 1 block behind the visible tail
 
-
-    //TODO: BodyCoords[0].first is Y and vice versa - change that
-
     void check_if_eaten()
     {
         if (headX == fruitX && headY == fruitY)//prevTailX == TfruitX && prevTailY == TfruitY)
         {
             //creating new tail
-            BodyCoords.emplace_back(prevTailY, prevTailX);
+            BodyCoords.emplace_back(prevTailX, prevTailY);
             length++;
             //"deleting" fruit
             TfruitX = 0; TfruitY = 0;
@@ -171,7 +168,7 @@ public:
 
             for (int i = 0; i < BodyCoords.size(); i++)
             {
-                if (fruitX != BodyCoords[i].second && fruitY != BodyCoords[i].first)
+                if (fruitX != BodyCoords[i].first && fruitY != BodyCoords[i].second)
                 {
                     out = true;
                     break;
@@ -193,7 +190,7 @@ public:
     {
         for (int i = 1; i < BodyCoords.size(); i++)
         {
-            if (headX == BodyCoords[i].second && headY == BodyCoords[i].first)
+            if (headX == BodyCoords[i].first && headY == BodyCoords[i].second)
             {
                 bool again = false;
                 while (!again)
@@ -229,12 +226,11 @@ public:
         prevTailY = tailY; prevTailX = tailX;
         pair <int, int> prevPos1 = BodyCoords[0];
         pair <int, int> prevPos2;
-        if (BodyCoords[0].first == currY && BodyCoords[0].second == currX)
-        {
-        }
+        if (BodyCoords[0].second == currY && BodyCoords[0].first == currX) //probably death delay
+            return;
         else
         {
-            BodyCoords[0] = { currY, currX };
+            BodyCoords[0] = { currX, currY };
             for (int i = 1; i < BodyCoords.size(); i++)
             {
                 prevPos2 = BodyCoords[i];
@@ -244,8 +240,8 @@ public:
             headY = currY, headX = currX;
             check_if_eaten();
             check_colision();
-            tailY = BodyCoords[BodyCoords.size() - 1].first;
-            tailX = BodyCoords[BodyCoords.size() - 1].second;
+            tailX = BodyCoords[BodyCoords.size() - 1].first;
+            tailY = BodyCoords[BodyCoords.size() - 1].second;
 
         }
     }
@@ -370,11 +366,11 @@ public:
         cout << " ";
 
         //drawing snake
-        gotoxy(BodyCoords[0].second, BodyCoords[0].first);
+        gotoxy(BodyCoords[0].first, BodyCoords[0].second);
         cout << "@";
         for (int i = 1; i < BodyCoords.size() - 1; i++)
         {
-            gotoxy(BodyCoords[i].second, BodyCoords[i].first);
+            gotoxy(BodyCoords[i].first, BodyCoords[i].second);
             cout << "#";
         }
         gotoxy(1, 1);
@@ -649,10 +645,10 @@ private:
     int TfruitY, TfruitX;
     void fill_BodyCoords()
     {
-        BodyCoords.emplace_back(headY, headX);
+        BodyCoords.emplace_back(headX, headY);
         for (int i = 1; i < startingLength; i++)
-            BodyCoords.emplace_back(headY, headX - i);
-        BodyCoords.emplace_back(tailY, tailX);
+            BodyCoords.emplace_back(headX, headY - i);
+        BodyCoords.emplace_back(tailX, tailY);
 
         /*for (const auto& [x, y] : BodyCoords)
             cout << x << ' ' << y << '\n';*/
