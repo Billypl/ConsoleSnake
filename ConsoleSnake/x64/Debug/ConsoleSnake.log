@@ -1,0 +1,10 @@
+﻿  snake.cpp
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(241,29): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(273,66): warning C4244: 'return': conversion from 'double' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(532,1): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(559,1): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(600,19): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(600,36): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(616,1): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\ConsoleSnake\snake.cpp(672,15): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  ConsoleSnake.vcxproj -> E:\Billy\Pulpit\Programowanie\Cpp\Sneak\Snake\ConsoleSnake\x64\Debug\ConsoleSnake.exe
