@@ -1,7 +1,6 @@
 #include <iostream>
 #include <conio.h>
-#include <windows.h>
-#include <time.h>
+#include <Windows.h>
 #include <string>
 #include <cstdlib>
 #include <vector>
@@ -12,227 +11,18 @@
 #include <direct.h>
 #include <algorithm>
 #include <array>
-#pragma warning(disable : 4996)
 #define FOREGROUND_DEFAULT 7
 
+#include "../Headers/customSTD.h"
+#include "../Headers/dateFormatter.h"
+#include "../Headers/console.h"
+#include "../Headers/draw.h"
+
 using namespace std;
+using namespace customSTD;
+Console console;
 
-inline bool operator== (POINT a, POINT b) { return ((a.x == b.x) && (a.y == b.y)); }
-inline bool operator!= (POINT a, POINT b) { return !(a == b); }
 
-void gotoxy(int x, int y)
-{
-    COORD c;
-    c.X = x - 1;
-    c.Y = y - 1;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
-}
-
-void gotoxy(int x, int y, char character)
-{
-    gotoxy(x, y);
-    cout << character;
-}
-
-int random(int rangeStart, int rangeEnd)
-{
-    return (rand() % rangeEnd) + rangeStart;
-}
-
-namespace date
-{
-    string fDate(int date)
-    {
-        string F_date = to_string(date);
-        if (date < 10)
-            F_date = "0" + to_string(date);
-
-        return F_date;
-    }
-
-    string getDate()
-    {
-        time_t now = time(0);
-        tm ltm = (*localtime(&now));
-
-        int day = ltm.tm_mday;
-        int month = 1 + ltm.tm_mon;
-        int year = 1900 + ltm.tm_year;
-
-        int hour = ltm.tm_hour;
-        int min = ltm.tm_min; 
-        int sec = ltm.tm_sec; 
-
-        string date = fDate(day) + "-" 
-            + fDate(month) + "-" 
-            + fDate(year) + "   ";
-        
-        date += fDate(hour) + ":" 
-            + fDate(min) + ":" 
-            + fDate(sec);
-
-        return date;
-    }
-}
-
-class Console
-{
-    const bool CENTERING = true;
-    CONSOLE_FONT_INFOEX cfi;
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    HWND hDesktop = GetDesktopWindow();
-    HWND console = GetConsoleWindow();
-    RECT desktop = GetWindowRectangle();
-
-    RECT GetWindowRectangle()
-    {
-        RECT desktop;
-        GetWindowRect(hDesktop, &desktop);
-        return desktop;
-    }
-
-    void makeScrollAppear()
-    {
-        COORD c;
-        c.X = WIDTH + 100; c.Y = 9000;
-        SetConsoleScreenBufferSize(hConsole, c);
-    }
-
-public:
-
-    const int WIDTH = 40, const HEIGHT = 15;
-
-    Console()
-    {
-        changeFont();
-        centerWindow(WIDTH, HEIGHT);
-        makeScrollAppear(); //doesnt work
-    }
-
-    void setTextColor(UINT color)
-    {
-        SetConsoleTextAttribute(hConsole, color | FOREGROUND_INTENSITY);
-    }
-
-    void centerWindow(int width, int height)
-    {
-        if (CENTERING != true)
-            return;
-        
-        const pair<int, int> MARGIN = {36, 60};
-        width = width * cfi.dwFontSize.X + MARGIN.first;
-        height = height * cfi.dwFontSize.Y + MARGIN.second;
-
-        MoveWindow(console, (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2), width, height, TRUE);
-    }
-
-    void changeFont()
-    {
-        cfi.cbSize = sizeof(cfi);
-        cfi.nFont = 0;
-        cfi.dwFontSize.X = 13;                   
-        cfi.dwFontSize.Y = 24;                   
-        cfi.FontFamily = FF_DONTCARE;
-        cfi.FontWeight = FW_BOLD;
-        wcscpy_s(cfi.FaceName, L"Liberation Mono");
-        SetCurrentConsoleFontEx(hConsole, FALSE, &cfi);
-    }
-
-} console;
-
-namespace draw
-{
-    const int STARTING_LENGTH = 4; // fix to Object::STARTING_LENGTH later
-
-    namespace border
-    {
-        void topBorder()
-        {
-            gotoxy(1, 1);
-            for (int i = 1; i <= console.WIDTH; i++)
-                cout << "$";
-        }
-
-        void leftBorder()
-        {
-            for (int i = 1; i <= console.HEIGHT; i++)
-                gotoxy(1, i, '$');
-        }
-
-        void rightBorder()
-        {
-            for (int i = 1; i <= console.HEIGHT; i++)
-                gotoxy(console.WIDTH, i, '$');
-        }
-
-        void bottomBorder()
-        {
-            gotoxy(1, console.HEIGHT);
-            for (int i = 1; i <= console.WIDTH; i++)
-                cout << "$";
-        }
-    }
-
-    void board()
-    {
-        border::topBorder();
-        border::leftBorder();
-        border::rightBorder();
-        border::bottomBorder();
-    }
-    
-    void snake(vector <POINT> BodyCoords, POINT tail)
-    {
-        gotoxy(BodyCoords[0].x, BodyCoords[0].y, '@');
-        for (int i = 1; i < BodyCoords.size() - 1; i++)
-            gotoxy(BodyCoords[i].x, BodyCoords[i].y, '#');
-        
-        gotoxy(tail.x, tail.y, ' ');
-        gotoxy(1, 1);
-    }
-    
-    void playAgainMenu()
-    {
-        const pair<int, int> MIDDLE = { console.WIDTH / 2 - 5, console.HEIGHT / 2 };
-        gotoxy(MIDDLE.first , MIDDLE.second + 2);
-        cout << "1. Play again";
-        gotoxy(MIDDLE.first, MIDDLE.second + 3);
-        cout << "2. Exit";
-        gotoxy(MIDDLE.first, MIDDLE.second + 4);
-        cout << "3. Menu";
-
-        gotoxy(MIDDLE.first, MIDDLE.second + 5);
-        cout << "Choose option: ";
-        console.centerWindow(console.WIDTH, console.HEIGHT);
-    }
-    
-    void scoresMenu()
-    {
-        system("CLS");
-        gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2);
-        cout << "1. Scoreboard";
-        gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2 + 1);
-        cout << "2. Last scores";
-        gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2 + 2);
-        cout << "3. Settings (not ready)";
-        gotoxy(console.WIDTH / 2 - 6, console.HEIGHT / 2 + 3);
-        cout << "Choose option: ";
-    }
-
-    void gameOverScreen(vector <POINT> BodyCoords)
-    {
-        system("CLS");
-        console.setTextColor(FOREGROUND_RED );
-        gotoxy(console.WIDTH / 2 - 7, console.HEIGHT / 2 - 2); 
-        cout << "G A M E   O V E R";
-        gotoxy(console.WIDTH / 2 - 5, console.HEIGHT / 2); 
-        cout << "Your score: " << BodyCoords.size() - STARTING_LENGTH - 1;
-        console.setTextColor(FOREGROUND_DEFAULT);
-
-        playAgainMenu();
-    }
-    
-}
 
 const int H_SPEED = 150;
 const int V_SPEED = H_SPEED * 1.4;
@@ -282,10 +72,10 @@ public:
         console.setTextColor(FOREGROUND_DEFAULT);
     }
     void checkIfEaten()
-    {   
+    {
         if (head() != fruit)
             return;
-        
+
         BodyCoords.push_back(prevTail);
         updateScore();
         spawnFruit();
@@ -318,9 +108,9 @@ public:
     {
         for (int i = 1; i < BodyCoords.size(); i++)
         {
-            if (head() != BodyCoords[i])    
+            if (head() != BodyCoords[i])
                 continue;
-         
+
             bool again = false;
             while (!again)
             {
@@ -376,7 +166,7 @@ public:
             case '3':
                 draw::scoresMenu();
                 chooseScoresMenuOption();
-                
+
                 _getch();
                 system("CLS");
                 draw::board();
@@ -404,7 +194,7 @@ public:
 
     void moveCoords()
     {
-        prevTail = tail; 
+        prevTail = tail;
         POINT prevPos1 = BodyCoords[0];
         if (BodyCoords[0] == currPos) //probably death delay (commented after a year)
             return;
@@ -442,7 +232,7 @@ public:
             break;
         }
     }
-    
+
 
     void moveCoord(LONG& coord, bool isInRange, int distanceToMove)
     {
@@ -451,7 +241,7 @@ public:
             checkGameOver();
             return;
         }
-        
+
         coord += distanceToMove;
         gameOverTicks = 0;
     }
@@ -470,7 +260,7 @@ public:
             moveCoord(currPos.x, currPos.x > 2, -1);
             Sleep(H_SPEED);
             break;
-            
+
         case 'S':
             moveCoord(currPos.y, currPos.y < console.HEIGHT - 1, 1);
             Sleep(V_SPEED);
@@ -482,7 +272,7 @@ public:
             break;
         }
     }
-    
+
     void move()
     {
         char key = toupper(direction);
@@ -534,7 +324,7 @@ public:
         lastScore.close();
     }
 
-    void readingScores(string filename, array<pair<int,string>, 10>& scores, int& i)
+    void readingScores(string filename, array<pair<int, string>, 10>& scores, int& i)
     {
         ifstream scoresFile(filename);
         string line;
@@ -632,7 +422,7 @@ public:
         fillBodyCoords();
         draw::snake(BodyCoords, tail);
         spawnFruit();
-        gotoxy(console.WIDTH / 2 - 3, 1); 
+        gotoxy(console.WIDTH / 2 - 3, 1);
         cout << "Score: " << 0;
     }
 
@@ -642,7 +432,7 @@ public:
         currPos = { console.WIDTH / 4, console.HEIGHT / 2 };
         //snake reset
         direction = 'D'; prevDirection = 'D';
-        tail = { currPos.x - STARTING_LENGTH, currPos.y};
+        tail = { currPos.x - STARTING_LENGTH, currPos.y };
 
         draw::board();
         BodyCoords.clear();
@@ -669,7 +459,7 @@ int main()
     srand(time(NULL));
     while (true)
     {
-        while (_kbhit()) 
+        while (_kbhit())
             direction = _getch();
 
         //direction output /////DO DOPRACOWANIA!!!/////
